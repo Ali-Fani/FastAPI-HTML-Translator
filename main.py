@@ -1,16 +1,36 @@
-# This is a sample Python script.
+from bs4 import BeautifulSoup
+import google.generativeai as genai
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import Response
+from dotenv import load_dotenv
+import os
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# Load the environment variables from the .env file
+
+app = FastAPI()
+load_dotenv()
+
+# Get the API key
+api_key = os.getenv("API_KEY")
+# Initialize the generative model
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel('gemini-pro')
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+@app.post("/translate")
+async def translate(file: UploadFile = File(...),target_language: str = Form("en")):
+    # Read the HTML file content
+    html = await file.read()
+    print(html)
+    # Translate the HTML
+    response = model.generate_content(f"Translate the HTML content to {target_language} : {html}")
+    translated_html = response.text
+    return Response(content=translated_html, media_type="text/html")
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
